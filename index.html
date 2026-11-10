@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Penjejak Perbelanjaan & Simulasi Notifikasi Bank</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.4);
+      border-radius: 4px;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .animate-pulse-ring {
+      animation: pulse-ring 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen font-sans transition-colors duration-200">
+
+  <!-- Mobile Container Wrapper -->
+  <div class="max-w-md mx-auto min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col shadow-2xl relative pb-20">
+    
+    <!-- Top Header Bar -->
+    <header class="bg-emerald-600 dark:bg-emerald-800 text-white p-4 pt-6 rounded-b-3xl shadow-lg relative">
+      <div class="flex justify-between items-center mb-4">
+        <div class="flex items-center space-x-2">
+          <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl font-bold">
+            <i class="fa-solid fa-bolt text-yellow-300"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-1">
+              <span class="text-xs text-emerald-100 font-medium uppercase tracking-wider">Auto-Tracker</span>
+              <span class="bg-emerald-800/60 text-[9px] px-1.5 py-0.2 rounded text-emerald-200 border border-emerald-400/30">AI Parser</span>
+            </div>
+            <p class="text-lg font-bold leading-tight">Penjejak Notifikasi Bank</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <!-- Auto-Launch Settings Toggle -->
+          <button id="toggleAutoOpenBtn" class="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition relative" title="Tetapan Auto-Buka Skrin Pilihan Kategori">
+            <i class="fa-solid fa-mobile-screen-button text-emerald-100 text-sm"></i>
+            <span id="autoOpenIndicator" class="absolute -top-0.5 -right-0.5 w-3 h-3 bg-green-400 border-2 border-emerald-600 rounded-full"></span>
+          </button>
+          <!-- Android Guide Button -->
+          <button id="androidGuideBtn" class="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition" title="Panduan Android Sebenar">
+            <i class="fa-brands fa-android text-emerald-100 text-sm"></i>
+          </button>
+          <!-- Theme Toggle Button -->
+          <button id="themeToggleBtn" class="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition" title="Tukar Mod">
+            <i id="themeIcon" class="fa-solid fa-moon"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Balance Card -->
+      <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 text-center shadow-inner mt-2">
+        <span class="text-xs text-emerald-100 font-medium">Baki Semasa</span>
+        <div id="totalBalance" class="text-3xl font-extrabold my-1 tracking-tight">RM 0.00</div>
+        
+        <!-- Income / Expense Sub-totals -->
+        <div class="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-white/15 text-xs">
+          <div class="flex items-center space-x-2 justify-center border-r border-white/15 pr-2">
+            <div class="w-7 h-7 rounded-full bg-emerald-500/30 flex items-center justify-center text-emerald-200">
+              <i class="fa-solid fa-arrow-down"></i>
+            </div>
+            <div class="text-left">
+              <span class="block text-emerald-200 text-[10px]">Pendapatan</span>
+              <span id="totalIncome" class="font-semibold text-sm">RM 0.00</span>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2 justify-center pl-2">
+            <div class="w-7 h-7 rounded-full bg-rose-500/30 flex items-center justify-center text-rose-200">
+              <i class="fa-solid fa-arrow-up"></i>
+            </div>
+            <div class="text-left">
+              <span class="block text-rose-200 text-[10px]">Perbelanjaan</span>
+              <span id="totalExpense" class="font-semibold text-sm">RM 0.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Body -->
+    <main class="flex-1 p-4 space-y-5 overflow-y-auto">
+
+      <!-- FEATURE 1: SMS / Bank Notification Listener Simulator -->
+      <section class="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-md border border-emerald-500/30 dark:border-emerald-500/20 relative overflow-hidden">
+        <div class="absolute -right-6 -top-6 w-20 h-20 bg-emerald-500/10 rounded-full blur-xl pointer-events-none"></div>
+        
+        <div class="flex justify-between items-center mb-3">
+          <div class="flex items-center space-x-2">
+            <span class="relative flex h-3 w-3">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <h2 class="text-sm font-bold text-gray-900 dark:text-gray-100">Simulasi Notifikasi Bank</h2>
+          </div>
+          <span class="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/20">
+            Auto-Detect ON
+          </span>
+        </div>
+
+        <p class="text-[11px] text-gray-500 dark:text-gray-400 mb-3">Pilih contoh notifikasi bank Malaysia atau taip/tampal mesej SMS untuk di-parse secara automatik:</p>
+
+        <!-- Preset Bank Notification Badges -->
+        <div class="flex space-x-1.5 no-scrollbar overflow-x-auto pb-2 mb-2 text-[11px]">
+          <button onclick="loadPreset('mae')" class="px-2.5 py-1 rounded-lg font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 hover:bg-amber-500/20 transition whitespace-nowrap">Maybank (MAE)</button>
+          <button onclick="loadPreset('cimb')" class="px-2.5 py-1 rounded-lg font-medium bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 hover:bg-red-500/20 transition whitespace-nowrap">CIMB Clicks</button>
+          <button onclick="loadPreset('tng')" class="px-2.5 py-1 rounded-lg font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition whitespace-nowrap">TNG eWallet</button>
+          <button onclick="loadPreset('rhb')" class="px-2.5 py-1 rounded-lg font-medium bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 hover:bg-sky-500/20 transition whitespace-nowrap">RHB Bank</button>
+          <button onclick="loadPreset('pb')" class="px-2.5 py-1 rounded-lg font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition whitespace-nowrap">Public Bank</button>
+          <button onclick="loadPreset('setel')" class="px-2.5 py-1 rounded-lg font-medium bg-teal-500/10 text-teal-600 dark:text-teal-400 border border-teal-500/20 hover:bg-teal-500/20 transition whitespace-nowrap">Setel PETRONAS</button>
+        </div>
+
+        <!-- Notification Input Area -->
+        <div class="relative mb-3">
+          <textarea id="notifInput" rows="3" placeholder="Contoh: RM 45.00 dibayar kepada PETRONAS Gombak pada 10/11/2026 melalui MAE..." class="w-full p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none resize-none"></textarea>
+          <button onclick="clearNotifInput()" class="absolute right-2 top-2 text-gray-400 hover:text-gray-600 text-xs p-1">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Simulation Actions -->
+        <div class="flex items-center space-x-2">
+          <button onclick="simulateNotification()" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white text-xs font-bold rounded-xl shadow transition flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-bell"></i>
+            <span>Simulasikan Notifikasi (Auto-Detect)</span>
+          </button>
+        </div>
+
+        <!-- Toggle setting status bar inside simulation section -->
+        <div class="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-[11px]">
+          <span class="text-gray-500 dark:text-gray-400">Auto-Buka Skrin Kategori:</span>
+          <label class="inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="autoOpenToggle" class="sr-only peer" checked>
+            <div class="w-8 h-4.5 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-600 relative"></div>
+            <span id="autoOpenStatusLabel" class="ml-2 font-bold text-emerald-600 dark:text-emerald-400">Aktif</span>
+          </label>
+        </div>
+
+        <!-- Real-time Live Preview Breakdown -->
+        <div id="parsePreviewBox" class="mt-3 p-3 bg-gray-100 dark:bg-gray-800/70 rounded-xl text-[11px] border border-gray-200 dark:border-gray-700 hidden">
+          <div class="flex items-center justify-between mb-1.5 border-b border-gray-200 dark:border-gray-700 pb-1">
+            <span class="font-bold text-emerald-600 dark:text-emerald-400 flex items-center">
+              <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Keputusan Parse Auto:
+            </span>
+            <span id="previewTypeBadge" class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-100 dark:bg-rose-950 text-rose-600">Perbelanjaan</span>
+          </div>
+          <div class="grid grid-cols-2 gap-x-2 gap-y-1 font-mono text-[10px]">
+            <div><span class="text-gray-400">Jumlah:</span> <strong id="prevAmount" class="text-gray-800 dark:text-gray-200">-</strong></div>
+            <div><span class="text-gray-400">Peniaga:</span> <strong id="prevMerchant" class="text-gray-800 dark:text-gray-200">-</strong></div>
+            <div><span class="text-gray-400">Kategori:</span> <strong id="prevCategory" class="text-gray-800 dark:text-gray-200">-</strong></div>
+            <div><span class="text-gray-400">Bank/eWallet:</span> <strong id="prevBank" class="text-gray-800 dark:text-gray-200">-</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Budget Target Card -->
+      <section class="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
+        <div class="flex justify-between items-center mb-2">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-bullseye text-emerald-600 dark:text-emerald-400"></i>
+            <h2 class="text-sm font-bold">Bajet Bulanan</h2>
+          </div>
+          <button id="editBudgetBtn" class="text-xs text-emerald-600 dark:text-emerald-400 font-medium hover:underline flex items-center space-x-1">
+            <i class="fa-solid fa-pen text-[10px]"></i>
+            <span id="budgetValueText">RM 0</span>
+          </button>
+        </div>
+        
+        <!-- Budget Progress Bar -->
+        <div class="w-full bg-gray-200 dark:bg-gray-800 h-3 rounded-full overflow-hidden my-2">
+          <div id="budgetProgressBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        
+        <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+          <span id="budgetUsedText">Terpakai: RM 0.00</span>
+          <span id="budgetRemainingText" class="font-medium">Baki Bajet: RM 0.00</span>
+        </div>
+      </section>
+
+      <!-- Category Breakdown Chart Section -->
+      <section class="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
+        <h2 class="text-sm font-bold mb-3 flex items-center justify-between">
+          <span><i class="fa-solid fa-chart-pie mr-2 text-indigo-500"></i>Analisis Perbelanjaan</span>
+          <span id="expenseCountBadge" class="text-[10px] bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-semibold px-2 py-0.5 rounded-full">0 Kategori</span>
+        </h2>
+
+        <!-- Donut Chart & Legend -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 my-2">
+          <!-- Donut SVG -->
+          <div class="relative w-32 h-32 flex-shrink-0">
+            <svg id="donutSvg" viewBox="0 0 36 36" class="w-full h-full transform -rotate-90">
+              <circle cx="18" cy="18" r="15.91549430918954" fill="transparent" stroke="#e5e7eb" stroke-width="3.8" class="dark:stroke-gray-800"></circle>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+              <span class="text-[9px] uppercase tracking-wider text-gray-400">Jumlah</span>
+              <span id="donutCenterTotal" class="text-xs font-bold">RM0</span>
+            </div>
+          </div>
+
+          <!-- Progress Bars by Category -->
+          <div id="categoryBars" class="w-full flex-1 space-y-2 text-xs">
+            <p class="text-gray-400 italic text-center py-2">Tiada perbelanjaan direkodkan lagi.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Log Notifikasi Terakhir (History of Notifications) -->
+      <section class="bg-white dark:bg-gray-900 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-bold flex items-center">
+            <i class="fa-solid fa-clock-rotate-left mr-2 text-blue-500"></i>Log Notifikasi Dibaca
+          </h2>
+          <span id="notifLogCount" class="text-[10px] bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-semibold">0 Diterima</span>
+        </div>
+        <div id="notifLogList" class="space-y-2 max-h-40 overflow-y-auto pr-1">
+          <p class="text-xs text-gray-400 italic text-center py-2">Belum ada notifikasi ditangkap.</p>
+        </div>
+      </section>
+
+      <!-- Transaction Filter & Search Bar -->
+      <section class="space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold flex items-center">
+            <i class="fa-solid fa-receipt mr-2 text-amber-500"></i>Sejarah Transaksi
+          </h2>
+          <span id="txCount" class="text-xs text-gray-500">0 rekod</span>
+        </div>
+
+        <!-- Search Input -->
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"></i>
+          <input type="text" id="searchInput" placeholder="Cari transaksi / peniaga / bank..." class="w-full pl-9 pr-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
+        </div>
+
+        <!-- Filter Pills -->
+        <div class="flex space-x-2 no-scrollbar overflow-x-auto pb-1 text-xs">
+          <button data-filter="all" class="filter-btn px-3 py-1.5 rounded-xl font-medium bg-emerald-600 text-white transition whitespace-nowrap shadow-sm">Semua</button>
+          <button data-filter="expense" class="filter-btn px-3 py-1.5 rounded-xl font-medium bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-300 transition whitespace-nowrap">Perbelanjaan</button>
+          <button data-filter="income" class="filter-btn px-3 py-1.5 rounded-xl font-medium bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-300 transition whitespace-nowrap">Pendapatan</button>
+        </div>
+
+        <!-- Transaction List -->
+        <div id="transactionList" class="space-y-2.5">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Floating Add Button -->
+    <div class="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-20 w-full max-w-md px-4 pointer-events-none">
+      <div class="flex justify-end">
+        <button id="openModalBtn" class="pointer-events-auto bg-emerald-600 hover:bg-emerald-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-xl font-bold transition transform active:scale-95 focus:outline-none" title="Tambah Manual">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal Form: Add / Edit Transaction -->
+    <div id="txModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 p-0 sm:p-4">
+      <div class="bg-white dark:bg-gray-900 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[90vh] overflow-y-auto">
+        
+        <div class="flex justify-between items-center mb-5 border-b border-gray-100 dark:border-gray-800 pb-3">
+          <h3 id="modalTitle" class="text-base font-bold">Tambah Transaksi Manual</h3>
+          <button id="closeModalBtn" class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-gray-800 dark:hover:text-white text-xs">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+    <!-- NEW FEATURE: Interactive Floating Incoming Notification Banner (Push Notification Overlay) -->
+    <div id="pushNotificationOverlay" class="fixed top-3 left-1/2 transform -translate-x-1/2 w-[92%] max-w-md bg-gray-900/95 text-white backdrop-blur-md rounded-2xl p-3.5 shadow-2xl border border-emerald-500/40 z-50 transition-all duration-300 translate-y-[-150%] opacity-0 pointer-events-none">
+      <div class="flex items-start space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-lg shadow-md flex-shrink-0 animate-bounce">
+          <i class="fa-solid fa-receipt"></i>
+        </div>
+        <div class="flex-1 min-w-0 cursor-pointer" id="pushNotifBody">
+          <div class="flex items-center justify-between mb-0.5">
+            <span id="pushBankName" class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">BANK NOTIFICATION</span>
+            <span class="text-[9px] text-gray-400">Sekarang</span>
+          </div>
+          <p id="pushMerchantTitle" class="text-xs font-bold truncate text-white">Transaksi Dikesan</p>
+          <p id="pushAmountText" class="text-sm font-extrabold text-emerald-300">RM 0.00</p>
+          <p class="text-[10px] text-gray-300 mt-0.5">Tekan di sini untuk sahkan & pilih kategori perbelanjaan →</p>
+        </div>
+        <button id="closePushNotifBtn" class="text-gray-400 hover:text-white text-xs p-1">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- NEW FEATURE: Auto-Prompt Category Confirmation Modal (Instant Category Chooser) -->
+    <div id="autoCategoryModal" class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-end sm:items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 p-0 sm:p-4">
+      <div class="bg-white dark:bg-gray-900 w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl transform translate-y-full sm:translate-y-0 transition-transform duration-300 max-h-[90vh] overflow-y-auto space-y-4">
+        
+        <!-- Header -->
+        <div class="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-3">
+          <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm font-bold">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold leading-tight">Sahkan & Pilih Kategori</h3>
+              <p class="text-[10px] text-gray-500 dark:text-gray-400">Pilih kategori yang tepat untuk transaksi ini</p>
+            </div>
+          </div>
+          <button id="closeAutoCategoryBtn" class="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 hover:text-gray-800 dark:hover:text-white text-xs">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Transaction Details Preview Card -->
+        <div class="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 rounded-2xl p-4 text-center">
+          <span id="promptBankBadge" class="text-[10px] font-bold px-2 py-0.5 bg-emerald-600 text-white rounded-full uppercase tracking-wider">MAYBANK (MAE)</span>
+          <h4 id="promptMerchant" class="text-base font-bold text-gray-900 dark:text-gray-100 mt-2">PETRONAS Gombak</h4>
+          <div id="promptAmount" class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 my-1">RM 45.00</div>
+          <span id="promptSmartSuggestion" class="inline-flex items-center text-[10px] text-emerald-700 dark:text-emerald-300 bg-white dark:bg-gray-800 px-2.5 py-1 rounded-full shadow-sm font-medium border border-emerald-200 dark:border-emerald-800">
+            <i class="fa-solid fa-lightbulb text-yellow-500 mr-1.5"></i> Cadangan Kategori: <strong id="suggestedCatName" class="ml-1 text-emerald-600 dark:text-emerald-400">Bahan Bakar & Transport</strong>
+          </span>
+        </div>
+
+        <!-- Quick 1-Tap Category Grid -->
+        <div>
+          <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Pilih Kategori (1-Tap):</label>
+          <div id="quickCategoryGrid" class="grid grid-cols-2 gap-2 text-xs">
+            <!-- Dynamic Category Pills inserted via JS -->
+          </div>
+        </div>
+
+        <!-- Notes Edit (Optional) -->
+        <div>
+          <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Catatan Tambahan (Pilihan)</label>
+          <input type="text" id="promptNotesInput" placeholder="Tambah nota ringkas..." class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex space-x-2 pt-2">
+          <button id="dismissPromptBtn" type="button" class="w-1/3 py-2.5 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 text-xs font-semibold rounded-xl text-gray-700 dark:text-gray-300 transition">
+            Abaikan
+          </button>
+          <button id="savePromptBtn" type="button" class="w-2/3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md transition transform active:scale-98 flex items-center justify-center space-x-1.5">
+            <i class="fa-solid fa-check"></i>
+            <span>Simpan Rekod Sekarang</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Modal Form: Edit Budget -->
+    <div id="budgetModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 p-4">
+      <div class="bg-white dark:bg-gray-900 w-full max-w-xs rounded-2xl p-5 shadow-2xl">
+        <h3 class="text-sm font-bold mb-3">Tetapkan Bajet Bulanan</h3>
+        <form id="budgetForm" class="space-y-3">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Had Bajet Perbelanjaan (RM)</label>
+            <input type="number" step="10" id="budgetInput" required placeholder="1500" class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div class="flex space-x-2 pt-2">
+            <button type="button" id="closeBudgetModalBtn" class="w-1/2 py-2 bg-gray-200 dark:bg-gray-800 text-xs font-semibold rounded-xl text-gray-700 dark:text-gray-300">Batal</button>
+            <button type="submit" class="w-1/2 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-xl shadow">Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Info: Real Android Integration Guide -->
+    <div id="androidGuideModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 p-4">
+      <div class="bg-white dark:bg-gray-900 w-full max-w-md rounded-3xl p-6 shadow-2xl max-h-[85vh] overflow-y-auto space-y-4">
+        <div class="flex justify-between items-center border-b border-gray-100 dark:border-gray-800 pb-3">
+          <div class="flex items-center space-x-2 text-emerald-600 dark:text-emerald-400">
+            <i class="fa-brands fa-android text-lg"></i>
+            <h3 class="text-sm font-bold">Pelaksanaan Pada Telefon Android Sebenar</h3>
+          </div>
+          <button id="closeAndroidGuideBtn" class="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 text-xs flex items-center justify-center">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="text-xs space-y-3 text-gray-600 dark:text-gray-300 leading-relaxed">
+          <p>Web browser demi keselamatan sistem operasi tidak boleh membaca notifikasi peranti secara automatik tanpa kebenaran sistem native. Untuk menjadikan aplikasi ini berfungsi **100% automatik di latar belakang** pada telefon Android anda, pilih salah satu kaedah berikut:</p>
+
+          <div class="p-3 bg-purple-50 dark:bg-purple-950/40 border border-purple-500/30 rounded-xl space-y-1">
+            <h4 class="font-bold text-purple-800 dark:text-purple-300 flex items-center">
+              <i class="fa-solid fa-mobile-screen-button mr-1.5"></i> Mekanisme Auto-Buka Skrin Android (Intent & Deep Link)
+            </h4>
+            <p class="text-[11px]">Pada peranti Android fizikal, perkhidmatan <code>NotificationListenerService</code> mengecam SMS/Notifikasi bank, memasukkan data ke pangkalan data tempatan, dan mencetuskan <strong>Android Intent / Deep Link (cth: <code>expensetracker://confirm-category?amount=45.00</code>)</strong> untuk membuka aplikasi secara terus ke skrin penentuan kategori.</p>
+          </div>
+          
+          <div class="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 rounded-xl space-y-1">
+            <h4 class="font-bold text-emerald-800 dark:text-emerald-300 flex items-center">
+              <i class="fa-solid fa-gears mr-1.5"></i> Kaedah 1: Guna Tasker / MacroDroid (Paling Mudah)
+            </h4>
+            <ol class="list-decimal pl-4 space-y-1 text-[11px]">
+              <li>Muat turun <strong>MacroDroid</strong> atau <strong>Tasker</strong> dari Play Store.</li>
+              <li>Buat <i>Trigger</i>: Notifikasi Diterima daripada aplikasi Maybank / CIMB / TNG.</li>
+              <li>Buat <i>Action</i>: Ekstrak teks notifikasi & hantar via <strong>HTTP POST / Webhook</strong> ke aplikasi anda.</li>
+            </ol>
+          </div>
+
+          <div class="p-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-500/30 rounded-xl space-y-1">
+            <h4 class="font-bold text-blue-800 dark:text-blue-300 flex items-center">
+              <i class="fa-solid fa-code mr-1.5"></i> Kaedah 2: Flutter / React Native App
+            </h4>
+            <p class="text-[11px]">Bungkus aplikasi ini menggunakan React Native / Flutter dengan plugin <code>android-notification-listener</code> untuk membaca SMS & Push Notifications secara latar belakang (Background Service).</p>
+          </div>
+        </div>
+
+        <button id="gotItGuideBtn" class="w-full py-2.5 bg-emerald-600 text-white font-bold rounded-xl text-xs shadow">Faham, Kembali ke Demo</button>
+      </div>
+    </div>
+
+    <!-- Custom Notification Toast -->
+    <div id="toast" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-4 py-2.5 rounded-full shadow-xl opacity-0 pointer-events-none transition-opacity duration-300 z-50 flex items-center space-x-2 border border-gray-700">
+      <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+      <span id="toastMsg">Mesej pemberitahuan</span>
+    </div>
+
+  </div>
+
+  <!-- JavaScript Logic & Regex Auto-Parser -->
+  <script>
+    // --- Preset Notification Samples for Malaysian Banks ---
+    const PRESETS = {
+      mae: "RM 45.00 paid to PETRONAS Gombak on 10/11/2026 via MAE app. Ref: 884192",
+      cimb: "CIMB: MYR 65.00 charged to Credit Card ending 4091 at McDonald's Danau Kota.",
+      tng: "TNG eWallet: Successful payment of RM 12.50 to ZUS Coffee Ampang.",
+      rhb: "RHB Alert: Account debit RM 140.00 for Lotus's Hypermarket Groceries.",
+      pb: "Public Bank: RM 250.00 transferred to TNB Utility Bill payment.",
+      setel: "Setel: RM 50.00 fuel purchase completed at PETRONAS Subang Jaya."
+    };
+
+    // Category Rules Mapping (Regex Rules for Merchant & Items)
+    const CATEGORY_RULES = [
+      { category: 'makanan', keywords: ['mcdonald', 'zus coffee', 'kfc', 'starbucks', 'food', 'restaurant', 'nasi', 'cafe', 'kedai makan', 'tealive'] },
+      { category: 'bahan_bakar', keywords: ['petronas', 'shell', 'setel', 'caltex', 'bhp', 'fuel', 'minyak'] },
+      { category: 'barangan', keywords: ['lotus', 'mydin', 'aeon', 'speedmart', 'jaya grocer', 'groceries', 'pasaraya'] },
+      { category: 'bil', keywords: ['tnb', 'syabas', 'air selangor', 'unifi', 'maxis', 'celcom', 'digi', 'utility', 'bil'] },
+      { category: 'hiburan', keywords: ['netflix', 'spotify', 'steam', 'cinema', 'gsc', 'tgv', 'cinema'] },
+      { category: 'kesihatan', keywords: ['guardian', 'watsons', 'caring', 'klinik', 'pharmacy'] }
+    ];
+
+    const CATEGORIES = {
+      expense: [
+        { id: 'makanan', name: 'Makanan & Minuman', icon: 'fa-utensils', color: '#f59e0b' },
+        { id: 'bahan_bakar', name: 'Bahan Bakar & Transport', icon: 'fa-gas-pump', color: '#ef4444' },
+        { id: 'barangan', name: 'Barangan Dapur', icon: 'fa-cart-shopping', color: '#10b981' },
+        { id: 'hiburan', name: 'Hiburan & Gaya Hidup', icon: 'fa-gamepad', color: '#8b5cf6' },
+        { id: 'bil', name: 'Bil & Utiliti', icon: 'fa-file-invoice-dollar', color: '#3b82f6' },
+        { id: 'kesihatan', name: 'Kesihatan', icon: 'fa-heart-pulse', color: '#ec4899' },
+        { id: 'lain', name: 'Lain-lain', icon: 'fa-ellipsis', color: '#6b7280' }
+      ],
+      income: [
+        { id: 'gaji', name: 'Gaji', icon: 'fa-money-bill-wave', color: '#10b981' },
+        { id: 'sambilan', name: 'Kerja Sambilan', icon: 'fa-briefcase', color: '#06b6d4' },
+        { id: 'pelaburan', name: 'Pelaburan / Dividen', icon: 'fa-chart-line', color: '#8b5cf6' },
+        { id: 'hadiah', name: 'Hadiah / Bonus', icon: 'fa-gift', color: '#f59e0b' },
+        { id: 'lain_inc', name: 'Lain-lain Pendapatan', icon: 'fa-wallet', color: '#6b7280' }
+      ]
+    };
+
+    // Initial Seed Data
+    const initialTransactions = [
+      { id: '1', type: 'income', amount: 3500.00, category: 'gaji', date: new Date().toISOString().split('T')[0], notes: 'Gaji Bulanan', bank: 'Maybank' },
+      { id: '2', type: 'expense', amount: 45.00, category: 'bahan_bakar', date: new Date().toISOString().split('T')[0], notes: 'PETRONAS Gombak', bank: 'MAE' },
+      { id: '3', type: 'expense', amount: 12.50, category: 'makanan', date: new Date().toISOString().split('T')[0], notes: 'ZUS Coffee Ampang', bank: 'TNG eWallet' }
+    ];
+
+    let transactions = JSON.parse(localStorage.getItem('my_expenses_data')) || initialTransactions;
+    let notifLogs = JSON.parse(localStorage.getItem('my_notif_logs')) || [];
+    let budgetTarget = parseFloat(localStorage.getItem('my_budget_target')) || 1500.00;
+    let currentFilter = 'all';
+    let currentType = 'expense';
+    let autoOpenEnabled = true;
+    let pendingParsedData = null; // Store temp notification parsed data for prompt approval
+
+    // Auto Open Toggle elements
+    const autoOpenToggle = document.getElementById('autoOpenToggle');
+    const autoOpenStatusLabel = document.getElementById('autoOpenStatusLabel');
+    const autoOpenIndicator = document.getElementById('autoOpenIndicator');
+    const toggleAutoOpenBtn = document.getElementById('toggleAutoOpenBtn');
+
+    // Push notification overlay & category modal elements
+    const pushNotificationOverlay = document.getElementById('pushNotificationOverlay');
+    const pushNotifBody = document.getElementById('pushNotifBody');
+    const closePushNotifBtn = document.getElementById('closePushNotifBtn');
+    const pushBankName = document.getElementById('pushBankName');
+    const pushMerchantTitle = document.getElementById('pushMerchantTitle');
+    const pushAmountText = document.getElementById('pushAmountText');
+
+    const autoCategoryModal = document.getElementById('autoCategoryModal');
+    const closeAutoCategoryBtn = document.getElementById('closeAutoCategoryBtn');
+    const dismissPromptBtn = document.getElementById('dismissPromptBtn');
+    const savePromptBtn = document.getElementById('savePromptBtn');
+    const promptBankBadge = document.getElementById('promptBankBadge');
+    const promptMerchant = document.getElementById('promptMerchant');
+    const promptAmount = document.getElementById('promptAmount');
+    const suggestedCatName = document.getElementById('suggestedCatName');
+    const quickCategoryGrid = document.getElementById('quickCategoryGrid');
+    const promptNotesInput = document.getElementById('promptNotesInput');
+
+    // Auto-Open Toggle handlers
+    function setAutoOpenState(enabled) {
+      autoOpenEnabled = enabled;
+      if (autoOpenToggle) autoOpenToggle.checked = enabled;
+      if (autoOpenStatusLabel) autoOpenStatusLabel.textContent = enabled ? 'Aktif' : 'Nyahaktif';
+      if (autoOpenIndicator) autoOpenIndicator.className = enabled ? 'absolute -top-0.5 -right-0.5 w-3 h-3 bg-green-400 border-2 border-emerald-600 rounded-full' : 'hidden';
+      showToast(enabled ? "Auto-buka skrin pilihan kategori diaktifkan" : "Auto-buka skrin pilihan kategori dinyahaktifkan", "fa-mobile-screen-button");
+    }
+
+    if (autoOpenToggle) {
+      autoOpenToggle.addEventListener('change', (e) => setAutoOpenState(e.target.checked));
+    }
+    if (toggleAutoOpenBtn) {
+      toggleAutoOpenBtn.addEventListener('click', () => setAutoOpenState(!autoOpenEnabled));
+    }
+
+    // --- ENHANCED NOTIFICATION SIMULATION WORKFLOW ---
+    function simulateNotification() {
+      const text = notifInput.value.trim();
+      if (!text) {
+        showToast("Sila taip atau pilih contoh notifikasi bank dahulu!", "fa-circle-exclamation");
+        return;
+      }
+
+      const parsed = parseNotificationText(text);
+      if (!parsed) {
+        showToast("Gagal membaca maklumat dari notifikasi ini", "fa-triangle-exclamation");
+        return;
+      }
+
+      pendingParsedData = parsed;
+
+      // 1. Log to history
+      notifLogs.unshift({
+        id: Date.now().toString(),
+        text: text,
+        time: new Date().toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit' }),
+        parsed: parsed
+      });
+      if (notifLogs.length > 15) notifLogs.pop();
+      saveData();
+      renderNotifLogs();
+
+      // 2. Show Push Notification Banner Overlay
+      showPushOverlay(parsed);
+
+      // 3. If Auto-Open is ENABLED, trigger category selection prompt automatically
+      if (autoOpenEnabled) {
+        setTimeout(() => {
+          openAutoCategoryModal(parsed);
+        }, 600);
+      } else {
+        showToast("Notifikasi ditangkap! Tekan banner di atas untuk pilih kategori.", "fa-bell");
+      }
+    }
+
+    // Floating Push Banner Display
+    function showPushOverlay(parsed) {
+      pushBankName.textContent = parsed.bank || 'BANK NOTIFICATION';
+      pushMerchantTitle.textContent = parsed.merchant || 'Transaksi Dikesan';
+      pushAmountText.textContent = formatRM(parsed.amount);
+
+      pushNotificationOverlay.classList.remove('translate-y-[-150%]', 'opacity-0', 'pointer-events-none');
+      pushNotificationOverlay.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
+
+      // Auto hide banner after 8 seconds if not clicked
+      setTimeout(() => {
+        hidePushOverlay();
+      }, 8000);
+    }
+
+    function hidePushOverlay() {
+      pushNotificationOverlay.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
+      pushNotificationOverlay.classList.add('translate-y-[-150%]', 'opacity-0', 'pointer-events-none');
+    }
+
+    if (pushNotifBody) {
+      pushNotifBody.addEventListener('click', () => {
+        hidePushOverlay();
+        if (pendingParsedData) {
+          openAutoCategoryModal(pendingParsedData);
+        }
+      });
+    }
+    if (closePushNotifBtn) {
+      closePushNotifBtn.addEventListener('click', hidePushOverlay);
+    }
+
+    // --- AUTO CATEGORY CONFIRMATION MODAL LOGIC ---
+    function openAutoCategoryModal(parsed) {
+      pendingParsedData = parsed;
+      promptBankBadge.textContent = parsed.bank || 'BANK / EWALLET';
+      promptMerchant.textContent = parsed.merchant || 'Peniaga / Transaksi';
+      promptAmount.textContent = formatRM(parsed.amount);
+      promptNotesInput.value = parsed.merchant;
+
+      const categoryObj = getCategoryObj(parsed.category, parsed.type);
+      suggestedCatName.textContent = categoryObj.name;
+
+      // Populate Quick Category Grid (Pills)
+      quickCategoryGrid.innerHTML = '';
+      const catList = CATEGORIES[parsed.type] || CATEGORIES.expense;
+
+      catList.forEach(cat => {
+        const isSelected = cat.id === parsed.category;
+        const pillBtn = document.createElement('button');
+        pillBtn.type = 'button';
+        pillBtn.className = `p-2.5 rounded-xl border flex items-center space-x-2 text-left transition ${
+          isSelected 
+            ? 'bg-emerald-500 text-white border-emerald-600 font-bold shadow-sm' 
+            : 'bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-emerald-400'
+        }`;
+        
+        pillBtn.innerHTML = `
+          <div class="w-6 h-6 rounded-lg ${isSelected ? 'bg-white/20' : 'bg-gray-200 dark:bg-gray-700'} flex items-center justify-center text-xs">
+            <i class="fa-solid ${cat.icon}"></i>
+          </div>
+          <span class="truncate text-[11px]">${cat.name}</span>
+        `;
+
+        pillBtn.onclick = () => {
+          pendingParsedData.category = cat.id;
+          // Re-render pills selection
+          openAutoCategoryModal(pendingParsedData);
+        };
+
+        quickCategoryGrid.appendChild(pillBtn);
+      });
+
+      // Show modal
+      autoCategoryModal.classList.remove('opacity-0', 'pointer-events-none');
+      autoCategoryModal.children[0].classList.remove('translate-y-full');
+    }
+
+    function closeAutoCategoryModal() {
+      autoCategoryModal.classList.add('opacity-0', 'pointer-events-none');
+      autoCategoryModal.children[0].classList.add('translate-y-full');
+    }
+
+    if (closeAutoCategoryBtn) closeAutoCategoryBtn.addEventListener('click', closeAutoCategoryModal);
+    if (dismissPromptBtn) dismissPromptBtn.addEventListener('click', closeAutoCategoryModal);
+
+    if (savePromptBtn) {
+      savePromptBtn.addEventListener('click', () => {
+        if (!pendingParsedData) return;
+
+        const newTx = {
+          id: Date.now().toString(),
+          type: pendingParsedData.type,
+          amount: pendingParsedData.amount,
+          category: pendingParsedData.category,
+          date: new Date().toISOString().split('T')[0],
+          notes: promptNotesInput.value.trim() || pendingParsedData.merchant,
+          bank: pendingParsedData.bank
+        };
+
+        transactions.unshift(newTx);
+        saveData();
+        render();
+        closeAutoCategoryModal();
+        hidePushOverlay();
+        showToast(`Berjaya disimpan: ${formatRM(newTx.amount)} (${getCategoryObj(newTx.category, newTx.type).name})`, "fa-circle-check");
+      });
+    }
+
+    document.getElementById('themeToggleBtn').addEventListener('click', () => {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      document.getElementById('themeIcon').className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    });
+
+    // Save Data
+    function saveData() {
+      localStorage.setItem('my_expenses_data', JSON.stringify(transactions));
+      localStorage.setItem('my_budget_target', budgetTarget.toString());
+      localStorage.setItem('my_notif_logs', JSON.stringify(notifLogs));
+    }
+
+    function formatRM(val) {
+      return 'RM ' + parseFloat(val).toLocaleString('ms-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function getCategoryObj(catId, type) {
+      const list = CATEGORIES[type] || [];
+      return list.find(c => c.id === catId) || { name: catId, icon: 'fa-circle-question', color: '#9ca3af' };
+    }
+
+    // --- AUTO NOTIFICATION PARSER LOGIC ---
+    function parseNotificationText(text) {
+      if (!text || text.trim() === '') return null;
+
+      const textLower = text.toLowerCase();
+
+      // 1. Detect Type (Income vs Expense)
+      let type = 'expense';
+      if (textLower.includes('received') || textLower.includes('credited') || textLower.includes('masuk') || textLower.includes('transferred to your')) {
+        type = 'income';
+      }
+
+      // 2. Extract Amount (RM / MYR)
+      let amount = 0;
+      const amountRegex = /(?:RM|MYR)\s*([\d,]+\.\d{2}|[\d,]+)/i;
+      const matchAmount = text.match(amountRegex);
+      if (matchAmount && matchAmount[1]) {
+        amount = parseFloat(matchAmount[1].replace(/,/g, ''));
+      }
+
+      // 3. Detect Bank / Source
+      let bank = 'Bank/eWallet';
+      if (textLower.includes('maybank') || textLower.includes('mae')) bank = 'Maybank (MAE)';
+      else if (textLower.includes('cimb')) bank = 'CIMB Clicks';
+      else if (textLower.includes('tng') || textLower.includes('touch')) bank = 'TNG eWallet';
+      else if (textLower.includes('rhb')) bank = 'RHB Bank';
+      else if (textLower.includes('public bank')) bank = 'Public Bank';
+      else if (textLower.includes('setel')) bank = 'Setel';
+
+      // 4. Extract Merchant / Notes
+      let merchant = 'Transaksi Notifikasi';
+      const toMatch = text.match(/(?:to|paid to|charged at|at|kepada)\s+([A-Za-z0-9'\s\.-]+?)(?=\s+(?:on|via|ending|ref|pada|\.|$))/i);
+      if (toMatch && toMatch[1]) {
+        merchant = toMatch[1].trim();
+      } else {
+        // Fallback short snippet
+        merchant = text.substring(0, 30) + '...';
+      }
+
+      // 5. Auto Categorize based on keywords
+      let category = 'lain';
+      for (const rule of CATEGORY_RULES) {
+        if (rule.keywords.some(kw => textLower.includes(kw))) {
+          category = rule.category;
+          break;
+        }
+      }
+
+      return { type, amount, merchant
